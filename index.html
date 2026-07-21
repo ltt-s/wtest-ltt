@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>恋爱日记</title>
-<style>
+  <title>恋爱小记</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💕</text></svg>">
+  <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{
@@ -276,6 +277,16 @@ body{
 .stat-box .num{font-size:22px;font-weight:700;color:#ff4081}
 .stat-box .label{font-size:11px;color:#ff69b4}
 .battle-tools{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:15px}
+.link-sidebar{display:flex;flex-direction:column;gap:8px;min-width:80px;align-items:center}
+.link-sidebar-title{font-size:11px;color:#ff69b4;font-weight:600;margin-bottom:4px;text-align:center}
+.link-btn{display:block;padding:6px 10px;border-radius:10px;background:#fff0f5;color:#ff4081;font-size:12px;font-weight:600;text-decoration:none;transition:all .3s ease;border:1px solid #ffc0cb;text-align:center;white-space:nowrap;min-width:70px}
+.link-btn:hover{background:#ff4081;color:#fff;transform:scale(1.08);box-shadow:0 2px 8px rgba(255,64,129,.3)}
+@media(max-width:768px){
+  .battle-row{gap:12px}
+  .link-sidebar{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:6px;min-width:auto}
+  .link-sidebar-title{width:100%}
+  .link-btn{padding:5px 8px;font-size:11px;min-width:auto}
+}
 .tool-btn{
   padding:8px 20px;border-radius:20px;border:2px solid transparent;
   font-size:14px;cursor:pointer;transition:all .3s ease;font-weight:600;
@@ -493,7 +504,7 @@ body.cursor-hammer{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3
 
 <!-- 导航 -->
 <nav class="nav">
-  <div class="nav-title">恋爱日记 <span>我们的专属小天地</span></div>
+  <div class="nav-title">恋爱小记 <span>我们的专属小天地</span></div>
 </nav>
 
 <!-- 三栏布局 -->
@@ -594,6 +605,18 @@ body.cursor-hammer{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3
       <div class="battle-title">💖 爱的互动 💖</div>
       <div class="battle-sub">每天更新 · 选择武器 · 点击表情包互动吧</div>
       <div class="battle-row">
+        <!-- 左侧：快捷链接 -->
+        <div class="link-sidebar">
+          <div class="link-sidebar-title">🎬 视频</div>
+          <a class="link-btn" href="https://www.douyin.com" target="_blank">抖音</a>
+          <a class="link-btn" href="https://www.bilibili.com" target="_blank">哔哩哔哩</a>
+          <a class="link-btn" href="https://v.qq.com" target="_blank">腾讯视频</a>
+          <a class="link-btn" href="https://www.iqiyi.com" target="_blank">爱奇艺</a>
+          <div class="link-sidebar-title" style="margin-top:8px">🎵 音乐</div>
+          <a class="link-btn" href="https://music.163.com" target="_blank">网易云</a>
+          <a class="link-btn" href="https://y.qq.com" target="_blank">QQ音乐</a>
+        </div>
+
         <!-- 一二 -->
         <div class="battle-char" id="char1">
           <div class="char-name">一二 <span class="tag">臭狗屎</span></div>
@@ -636,6 +659,16 @@ body.cursor-hammer{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3
           </div>
           <div class="tool-hint" id="hint2">点击选择武器后点我</div>
         </div>
+
+        <!-- 右侧：快捷链接 -->
+        <div class="link-sidebar">
+          <div class="link-sidebar-title">📖 阅读</div>
+          <a class="link-btn" href="https://www.xiaohongshu.com" target="_blank">小红书</a>
+          <a class="link-btn" href="https://fanqienovel.com" target="_blank">番茄小说</a>
+          <div class="link-sidebar-title" style="margin-top:8px">🤖 AI</div>
+          <a class="link-btn" href="https://www.doubao.com" target="_blank">豆包</a>
+          <a class="link-btn" href="https://chat.deepseek.com" target="_blank">DeepSeek</a>
+        </div>
       </div>
 
       <div style="text-align:center;margin-top:20px">
@@ -664,7 +697,7 @@ body.cursor-hammer{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3
 
     <!-- 底部 -->
     <footer class="footer">
-      <p>💕 恋爱日记 · 记录每一个心动瞬间 💕</p>
+      <p>💕 恋爱小记 · 记录每一个心动瞬间 💕</p>
       <p>背景音乐：田馥甄 - 小幸运</p>
     </footer>
 
