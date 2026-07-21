@@ -121,6 +121,8 @@ body{
 }
 .nav-title{font-size:22px;font-weight:700;color:#ff4081;letter-spacing:2px}
 .nav-title span{font-size:16px;color:#ff6b9d;margin-left:8px}
+.sync-btn{position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:22px;cursor:pointer;opacity:.6;transition:all .3s}
+.sync-btn:hover{opacity:1;transform:translateY(-50%) scale(1.2)}
 
 /* ===== 三栏布局 ===== */
 .page-layout{
@@ -505,6 +507,7 @@ body.cursor-hammer{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3
 <!-- 导航 -->
 <nav class="nav">
   <div class="nav-title">恋爱小记 <span>我们的专属小天地</span></div>
+  <button class="sync-btn" onclick="document.getElementById('tokenModal').classList.add('active'); document.getElementById('syncStatus').textContent = githubToken ? '已连接云端 ✓' : ''">☁️</button>
 </nav>
 
 <!-- 三栏布局 -->
@@ -742,12 +745,40 @@ body.cursor-hammer{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3
   </div>
 </div>
 
+<!-- 云同步Token弹窗 -->
+<div class="life-modal-overlay" id="tokenModal">
+  <div class="life-modal" style="max-width:420px">
+    <h3>☁️ 开启云同步</h3>
+    <p style="font-size:13px;color:#888;line-height:1.6;margin-bottom:12px">
+      填入 GitHub Personal Access Token 后，你的心情记录、互动数据、生活贴将在多设备间实时同步。<br>
+      Token 仅存储在本浏览器，不会泄露。<br>
+      <a href="https://github.com/settings/tokens/new?scopes=repo&description=loveDiary" target="_blank" style="color:#ff4081">点此创建 Token (勾选 repo 权限)</a>
+    </p>
+    <input type="password" id="tokenInput" placeholder="粘贴你的 GitHub Token..." style="width:100%;padding:10px;border:1px solid #ffc0cb;border-radius:10px;font-size:14px;margin-bottom:12px" />
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="document.getElementById('tokenModal').classList.remove('active')">稍后</button>
+      <button class="btn-save" onclick="checkToken()">保存并同步</button>
+    </div>
+    <p id="syncStatus" style="font-size:12px;color:#ff69b4;text-align:center;margin-top:8px"></p>
+  </div>
+</div>
+
 <script>
 /* ========== 数据存储 ========== */
 const STORAGE_KEY = 'loveDiary_data';
 const LAST_DATE_KEY = 'loveDiary_lastDate';
+const TOKEN_KEY = 'loveDiary_github_token';
+const MOOD_KEY = 'loveDiary_moods';
 let currentTool = null;
 let data = { hearts1:0, hammers1:0, hearts2:0, hammers2:0, lifePosts:[] };
+
+/* GitHub API 配置 */
+const GH_OWNER = 'ltt-s';
+const GH_REPO = 'wtest-ltt';
+const GH_DATA_FILE = 'data.json';
+let githubToken = localStorage.getItem(TOKEN_KEY) || '';
+let dataSha = null; // 记录云端文件的 sha，更新时需要
+let isSyncing = false; // 防止重复同步
 
 const samplePosts = [
   { date:'2025-07-03', content:'今天认识到臭包包，哎呦这么害羞搞笑 ~', hasImage:false },
@@ -771,12 +802,86 @@ function init(){
   loadMoodList();
   renderMoodList();
   document.getElementById('lifeDate').value = new Date().toISOString().split('T')[0];
+  initCloud();
 }
 function resetData(){
   data = { hearts1:0, hammers1:0, hearts2:0, hammers2:0, lifePosts:[...samplePosts] };
   saveData();
 }
-function saveData(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+function saveData(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  cloudSync();
+}
+
+/* ========== GitHub 云同步 ========== */
+function ghApi(path, method, body){
+  const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/${path}`;
+  const opts = { method, headers: { 'Accept':'application/vnd.github+json' } };
+  if(githubToken) opts.headers['Authorization'] = `Bearer ${githubToken}`;
+  if(body) opts.body = JSON.stringify(body);
+  return fetch(url, opts);
+}
+
+async function cloudPull(){
+  if(!githubToken) return null;
+  try{
+    const res = await ghApi(`contents/${GH_DATA_FILE}`, 'GET');
+    if(!res.ok){
+      if(res.status === 404) return null; // 文件不存在，首次使用
+      throw new Error('pull failed: ' + res.status);
+    }
+    const json = await res.json();
+    dataSha = json.sha;
+    const decoded = JSON.parse(decodeURIComponent(escape(atob(json.content))));
+    return decoded;
+  }catch(e){ console.warn('cloudPull error:', e); return null; }
+}
+
+let cloudSyncTimer = null;
+async function cloudSync(){
+  if(!githubToken) return; // 未配置Token时只存本地
+  if(isSyncing) return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(async () => {
+    isSyncing = true;
+    try{
+      const allData = { ...data, moodList };
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(allData))));
+      const body = { message: 'sync: ' + new Date().toLocaleString('zh-CN'), content: encoded };
+      if(dataSha) body.sha = dataSha;
+      const res = await ghApi(`contents/${GH_DATA_FILE}`, 'PUT', body);
+      if(res.ok){ const json = await res.json(); dataSha = json.content.sha; }
+      else if(res.status === 409){ // sha 过期，重新拉取后重试
+        await cloudPull(); cloudSync();
+      }
+    }catch(e){ console.warn('cloudSync error:', e); }
+    isSyncing = false;
+  }, 2000); // 2秒防抖，避免频繁写入
+}
+
+function checkToken(){
+  const input = document.getElementById('tokenInput');
+  if(!input || !input.value.trim()) return;
+  githubToken = input.value.trim();
+  localStorage.setItem(TOKEN_KEY, githubToken);
+  document.getElementById('tokenModal').classList.remove('active');
+  showToast('Token 已保存，正在同步数据~');
+  initCloud();
+}
+
+async function initCloud(){
+  if(!githubToken){ return; }
+  const cloudData = await cloudPull();
+  if(cloudData){
+    if(cloudData.moodList) moodList = cloudData.moodList;
+    if(cloudData.hearts1 !== undefined) data = { ...data, ...cloudData };
+    delete data.moodList; // 不在 data 里存 moodList
+    saveMoodList();
+    renderMoodList();
+    updateBattleStats();
+    renderLifePosts();
+  }
+}
 
 function checkDailyReset(){
   const today = new Date().toISOString().split('T')[0];
@@ -903,14 +1008,13 @@ function createLoveTextWall(){
 }
 
 /* ========== 今日心情 ========== */
-const MOOD_KEY = 'loveDiary_moods';
 let moodList = [];
 
 function loadMoodList(){
   try{ const s = localStorage.getItem(MOOD_KEY); moodList = s ? JSON.parse(s) : []; }
   catch(e){ moodList = []; }
 }
-function saveMoodList(){ localStorage.setItem(MOOD_KEY, JSON.stringify(moodList)); }
+function saveMoodList(){ localStorage.setItem(MOOD_KEY, JSON.stringify(moodList)); cloudSync(); }
 
 function showMood(name, action){ showToast(name + ' 今天也要' + action + '哦~ 💕'); }
 
