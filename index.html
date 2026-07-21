@@ -700,6 +700,16 @@ body.cursor-hammer{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3
 
     <!-- 底部 -->
     <footer class="footer">
+      <!-- 云同步面板 -->
+      <div class="sync-panel" id="syncPanel" style="background:rgba(255,255,255,.9);border:1px solid #ffc0cb;border-radius:16px;padding:20px;margin-bottom:20px;max-width:500px;margin-left:auto;margin-right:auto">
+        <div style="font-size:16px;color:#ff4081;font-weight:700;margin-bottom:12px">☁️ 云同步设置</div>
+        <div id="syncStatusText" style="font-size:13px;color:#888;margin-bottom:10px">未开启云同步，数据仅保存在本地</div>
+        <input type="password" id="tokenInput2" placeholder="粘贴你的 GitHub Token..." style="width:100%;padding:10px;border:1px solid #ffc0cb;border-radius:10px;font-size:14px;margin-bottom:10px;box-sizing:border-box" />
+        <div style="font-size:12px;color:#999;margin-bottom:10px">
+          <a href="https://github.com/settings/tokens/new?scopes=repo&description=loveDiary" target="_blank" style="color:#ff4081">👉 点此创建 Token (勾选 repo 权限)</a>
+        </div>
+        <button class="btn-save" style="width:100%;padding:10px;border:none;border-radius:10px;background:#ff4081;color:#fff;font-size:14px;font-weight:600;cursor:pointer" onclick="checkToken2()">保存并开启同步</button>
+      </div>
       <p>💕 恋爱小记 · 记录每一个心动瞬间 💕</p>
       <p>背景音乐：田馥甄 - 小幸运</p>
     </footer>
@@ -869,8 +879,29 @@ function checkToken(){
   initCloud();
 }
 
+function checkToken2(){
+  const input = document.getElementById('tokenInput2');
+  if(!input || !input.value.trim()){ showToast('请先粘贴 Token~'); return; }
+  githubToken = input.value.trim();
+  localStorage.setItem(TOKEN_KEY, githubToken);
+  showToast('Token 已保存，正在同步数据~');
+  initCloud();
+}
+
+function updateSyncStatus(){
+  const el = document.getElementById('syncStatusText');
+  if(!el) return;
+  if(githubToken){
+    el.textContent = '✅ 云同步已开启，数据将自动同步到 GitHub';
+    el.style.color = '#4caf50';
+    const input = document.getElementById('tokenInput2');
+    if(input){ input.value = githubToken; input.disabled = true; }
+  }
+}
+
 async function initCloud(){
-  if(!githubToken){ return; }
+  if(!githubToken){ updateSyncStatus(); return; }
+  updateSyncStatus();
   const cloudData = await cloudPull();
   if(cloudData){
     if(cloudData.moodList) moodList = cloudData.moodList;
