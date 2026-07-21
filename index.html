@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>恋爱日记</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  background:#fff0f5;overflow-x:hidden;color:#8b4513;
+}
+
+/* ===== 入场弹窗 ===== */
+.entrance-overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:linear-gradient(135deg,#ff6b9d 0%,#ffc0cb 50%,#ffb6c1 100%);
+  z-index:9999;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;transition:opacity .6s ease,visibility .6s ease;
+}
+.entrance-overlay.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.entrance-heart{font-size:80px;animation:heartBeat 1.2s ease-in-out infinite}
+@keyframes heartBeat{
+  0%,100%{transform:scale(1)}
+  15%{transform:scale(1.25)}
+  30%{transform:scale(1)}
+  45%{transform:scale(1.15)}
+}
+.entrance-title{font-size:32px;color:#fff;font-weight:700;margin:24px 0 12px;text-shadow:2px 2px 8px rgba(0,0,0,.2)}
+.entrance-sub{font-size:18px;color:#fff8f0;margin-bottom:40px;opacity:.9}
+.entrance-btns{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+.entrance-btn{
+  padding:14px 48px;border-radius:50px;border:none;font-size:18px;
+  font-weight:600;cursor:pointer;transition:all .3s ease;
+  box-shadow:0 4px 20px rgba(0,0,0,.15);
+}
+.btn-yes{background:#fff;color:#ff4081}
+.btn-yes:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 8px 30px rgba(255,255,255,.4)}
+.btn-no{background:rgba(255,255,255,.2);color:#fff;border:2px solid rgba(255,255,255,.5)}
+.btn-no:hover{background:rgba(255,255,255,.3);transform:translateY(-2px)}
+.entrance-reject{
+  position:fixed;pointer-events:none;z-index:10000;font-size:28px;
+  color:#fff;font-weight:700;text-shadow:2px 2px 8px rgba(0,0,0,.3);
+  animation:rejectPop .6s ease-out forwards;
+}
+@keyframes rejectPop{
+  0%{opacity:1;transform:scale(.5) translateY(0)}
+  50%{transform:scale(1.2) translateY(-20px)}
+  100%{opacity:0;transform:scale(.8) translateY(-50px)}
+}
+
+/* ===== 首屏小爱心层 ===== */
+.hero-hearts{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:2;overflow:hidden;
+}
+.hero-hearts .falling-heart{color:#ff69b4;opacity:.5}
+.hero-hearts .falling-heart:nth-child(odd){color:#ff4081;opacity:.7}
+.hero-hearts .falling-heart:nth-child(3n){color:#ffb6c1;opacity:.6}
+
+/* ===== 全页飘落爱心 ===== */
+.falling-hearts{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden}
+.falling-heart{
+  position:absolute;color:#ffb6c1;font-size:20px;opacity:.6;
+  animation:fall linear infinite;user-select:none;
+}
+@keyframes fall{
+  0%{transform:translateY(-100vh) rotate(0deg);opacity:.8}
+  100%{transform:translateY(100vh) rotate(360deg);opacity:0}
+}
+
+/* ===== 图1全屏展示区（完整显示） ===== */
+.hero-section{
+  width:100%;min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  background:#fff0f5;
+  position:relative;overflow:hidden;
+}
+.hero-section::before{
+  content:'';position:absolute;top:0;left:0;width:100%;height:100%;
+  background:url('./1.jpg') center center/contain no-repeat;
+  z-index:1;
+}
+.love-text-wall{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  z-index:0;pointer-events:none;overflow:hidden;
+  opacity:.35;
+}
+.love-text-wall .wall-text{
+  position:absolute;color:#ff69b4;font-weight:700;white-space:nowrap;
+  font-family:'PingFang SC','Microsoft YaHei',sans-serif;
+  text-shadow:0 0 8px rgba(255,182,193,.5);
+  animation:floatText linear infinite;
+  user-select:none;
+}
+@keyframes floatText{
+  0%{transform:translateY(100vh) rotate(-3deg);opacity:0}
+  10%{opacity:.8}
+  90%{opacity:.8}
+  100%{transform:translateY(-20vh) rotate(3deg);opacity:0}
+}
+.hero-scroll-hint{
+  position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
+  z-index:2;color:rgba(255,64,129,.7);font-size:14px;font-weight:500;
+  animation:bounceDown 2s ease-in-out infinite;text-align:center;
+  text-shadow:0 1px 2px rgba(255,255,255,.8);
+}
+.hero-scroll-hint span{display:block;font-size:24px;margin-top:4px}
+@keyframes bounceDown{
+  0%,100%{transform:translateX(-50%) translateY(0)}
+  50%{transform:translateX(-50%) translateY(10px)}
+}
+
+/* ===== 导航 ===== */
+.nav{
+  position:sticky;top:0;z-index:100;background:rgba(255,240,245,.95);
+  backdrop-filter:blur(10px);border-bottom:1px solid #ffc0cb;
+  padding:12px 20px;text-align:center;
+}
+.nav-title{font-size:22px;font-weight:700;color:#ff4081;letter-spacing:2px}
+.nav-title span{font-size:16px;color:#ff6b9d;margin-left:8px}
+
+/* ===== 三栏布局 ===== */
+.page-layout{
+  display:flex;max-width:1400px;margin:0 auto;
+  position:relative;z-index:1;
+}
+.gif-sidebar{
+  width:170px;flex-shrink:0;padding:20px 10px;
+  display:flex;flex-direction:column;gap:16px;
+}
+.gif-sidebar img{
+  width:100%;border-radius:14px;
+  box-shadow:0 4px 16px rgba(255,105,180,.15);
+  transition:transform .3s ease;
+  cursor:pointer;
+  max-height:200px;object-fit:contain;
+}
+.gif-sidebar img:hover{transform:scale(1.08) translateY(-4px)}
+.main-content{flex:1;min-width:0;padding:20px}
+
+/* ===== 图文展示区 ===== */
+.showcase-section{margin-bottom:40px}
+.showcase-card{
+  background:rgba(255,255,255,.92);border-radius:20px;
+  box-shadow:0 8px 32px rgba(255,105,180,.15);
+  overflow:hidden;margin-bottom:24px;transition:transform .3s ease;
+  animation:fadeInUp .6s ease-out backwards;
+}
+.showcase-card:hover{transform:translateY(-4px)}
+@keyframes fadeInUp{
+  from{opacity:0;transform:translateY(30px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.showcase-row{display:flex;align-items:stretch;min-height:280px}
+.showcase-row.reverse{flex-direction:row-reverse}
+.showcase-img{
+  flex:1;min-width:0;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#ffe4e1 0%,#fff0f5 100%);
+  padding:20px;
+}
+.showcase-img img{max-width:100%;max-height:260px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.1)}
+.showcase-text{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:30px;text-align:center;
+}
+.showcase-text p{
+  font-size:clamp(18px,3vw,26px);color:#d63384;font-weight:600;
+  line-height:1.8;letter-spacing:2px;
+  text-shadow:1px 1px 2px rgba(255,182,193,.5);
+}
+.showcase-text .small{font-size:14px;color:#ff69b4;margin-top:12px;opacity:.8}
+
+/* ===== 今日心情 ===== */
+.mood-section{
+  text-align:center;margin:50px 0;padding:40px 20px;
+  background:linear-gradient(135deg,rgba(255,182,193,.3) 0%,rgba(255,240,245,.5) 100%);
+  border-radius:24px;position:relative;
+}
+.mood-section::before,.mood-section::after{
+  content:'♡';position:absolute;font-size:40px;color:#ffb6c1;opacity:.4;
+}
+.mood-section::before{top:15px;left:20px}
+.mood-section::after{bottom:15px;right:20px;transform:rotate(15deg)}
+.mood-title{font-size:28px;color:#ff4081;margin-bottom:8px;font-weight:700}
+.mood-sub{color:#ff69b4;font-size:14px;margin-bottom:30px}
+.mood-avatars{display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:wrap}
+.mood-avatar{text-align:center;transition:transform .3s ease;cursor:pointer}
+.mood-avatar:hover{transform:scale(1.1) translateY(-5px)}
+.mood-avatar .gif-wrap{width:120px;height:120px;margin:0 auto 8px}
+.mood-avatar .gif-wrap img{width:100%;height:100%;object-fit:contain}
+.mood-avatar .name{font-size:16px;color:#d63384;font-weight:600}
+.mood-avatar .action{font-size:12px;color:#ff69b4;margin-top:4px}
+.mood-center{font-size:40px;animation:heartPulse 1.5s ease-in-out infinite;cursor:pointer}
+
+/* 心情左右布局 */
+.mood-layout{
+  display:flex;gap:30px;align-items:stretch;flex-wrap:wrap;justify-content:center;
+}
+.mood-avatars{flex:0 0 auto;display:flex;align-items:center;gap:30px}
+.mood-record{
+  flex:1;min-width:200px;display:flex;flex-direction:column;
+  background:rgba(255,255,255,.7);border-radius:16px;padding:16px;
+  border:2px dashed #ffc0cb;
+}
+.mood-record-title{font-size:15px;color:#d63384;font-weight:600;margin-bottom:10px}
+.mood-list{
+  flex:1;display:flex;flex-direction:column;gap:8px;
+  min-height:60px;max-height:160px;overflow-y:auto;margin-bottom:12px;
+}
+.mood-item{
+  background:linear-gradient(135deg,#ffe4e1,#fff0f5);
+  border-radius:12px;padding:8px 14px;font-size:14px;color:#d63384;
+  display:flex;align-items:center;gap:6px;
+  animation:fadeInUp .3s ease-out;
+}
+.mood-item .del-btn{
+  margin-left:auto;color:#ff69b4;cursor:pointer;font-size:14px;
+  opacity:.5;transition:opacity .2s;
+}
+.mood-item .del-btn:hover{opacity:1;color:#ff4081}
+.mood-list-empty{color:#bbb;font-size:13px;text-align:center;padding:20px 0}
+
+.mood-input-wrap{
+  display:flex;gap:10px;justify-content:center;align-items:center;
+}
+.mood-input{
+  flex:1;padding:10px 16px;border:2px solid #ffc0cb;border-radius:20px;
+  background:rgba(255,255,255,.8);color:#8b4513;font-size:14px;
+  outline:none;transition:all .3s ease;
+}
+.mood-input:focus{border-color:#ff4081;box-shadow:0 0 0 3px rgba(255,64,129,.1)}
+.mood-save-btn{
+  width:38px;height:38px;border-radius:50%;border:none;
+  background:#ff4081;color:#fff;font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .3s ease;flex-shrink:0;
+}
+.mood-save-btn:hover{background:#e91e63;transform:scale(1.1)}
+.mood-display{
+  margin-top:12px;font-size:16px;color:#d63384;font-weight:500;
+  min-height:24px;
+}
+@keyframes heartPulse{
+  0%,100%{transform:scale(1)}50%{transform:scale(1.15)}
+}
+
+/* ===== 表情包互动区 ===== */
+.battle-section{
+  background:rgba(255,255,255,.95);border-radius:24px;
+  padding:30px 20px;margin-bottom:40px;
+  box-shadow:0 8px 32px rgba(255,105,180,.12);
+}
+.battle-title{text-align:center;font-size:24px;color:#ff4081;margin-bottom:8px;font-weight:700}
+.battle-sub{text-align:center;font-size:13px;color:#ff69b4;margin-bottom:25px}
+.battle-row{display:flex;justify-content:center;align-items:flex-start;gap:30px;flex-wrap:wrap}
+.battle-char{text-align:center;flex:1;min-width:140px;max-width:200px}
+.battle-char .char-gif-wrap{
+  width:150px;height:150px;margin:0 auto 10px;
+  cursor:pointer;transition:transform .2s ease;
+  position:relative;
+}
+.battle-char .char-gif-wrap img{
+  width:100%;height:100%;object-fit:contain;
+  pointer-events:none;
+}
+.battle-char .char-gif-wrap:active{transform:scale(.92)}
+.battle-char .char-name{font-size:18px;color:#d63384;font-weight:700;margin-bottom:8px}
+.battle-char .char-name .tag{font-size:11px;background:#ff4081;color:#fff;padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle}
+.battle-stats{display:flex;justify-content:center;gap:15px;margin-bottom:15px}
+.stat-box{
+  background:linear-gradient(135deg,#ffe4e1,#fff0f5);
+  border-radius:12px;padding:8px 16px;min-width:60px;
+}
+.stat-box .num{font-size:22px;font-weight:700;color:#ff4081}
+.stat-box .label{font-size:11px;color:#ff69b4}
+.battle-tools{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:15px}
+.tool-btn{
+  padding:8px 20px;border-radius:20px;border:2px solid transparent;
+  font-size:14px;cursor:pointer;transition:all .3s ease;font-weight:600;
+}
+.tool-btn.heart-btn{background:#fff0f5;border-color:#ff69b4;color:#ff4081}
+.tool-btn.heart-btn:hover,.tool-btn.heart-btn.active{background:#ff4081;color:#fff;border-color:#ff4081}
+.tool-btn.hammer-btn{background:#f0f0f0;border-color:#999;color:#666}
+.tool-btn.hammer-btn:hover,.tool-btn.hammer-btn.active{background:#ff6b6b;color:#fff;border-color:#ff6b6b}
+.tool-hint{font-size:12px;color:#999;margin-top:10px;text-align:center}
+
+/* 点击特效 */
+.click-effect{
+  position:fixed;pointer-events:none;z-index:9998;font-size:40px;
+  animation:clickPop .8s ease-out forwards;
+}
+@keyframes clickPop{
+  0%{opacity:1;transform:scale(.5) translateY(0)}
+  50%{transform:scale(1.3) translateY(-30px)}
+  100%{opacity:0;transform:scale(.5) translateY(-60px)}
+}
+
+/* 表情包反应动画 */
+.gif-shake{animation:shake .5s ease-in-out}
+@keyframes shake{
+  0%,100%{transform:rotate(0deg)}
+  25%{transform:rotate(-8deg)}
+  50%{transform:rotate(8deg)}
+  75%{transform:rotate(-4deg)}
+}
+.gif-hop{animation:hop .4s ease-in-out}
+@keyframes hop{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-15px)}
+}
+
+/* ===== 生活贴 ===== */
+.life-section{margin-bottom:40px}
+.life-title{text-align:center;font-size:26px;color:#ff4081;margin-bottom:30px;font-weight:700}
+.life-title::before,.life-title::after{content:' ♥ ';color:#ffb6c1}
+.life-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.life-card{
+  background:rgba(255,255,255,.95);border-radius:20px;padding:24px;
+  box-shadow:0 4px 20px rgba(255,182,193,.15);transition:transform .3s ease;
+  animation:fadeInUp .5s ease-out backwards;
+}
+.life-card:hover{transform:translateY(-4px)}
+.life-card:nth-child(1){animation-delay:.05s}
+.life-card:nth-child(2){animation-delay:.1s}
+.life-card:nth-child(3){animation-delay:.15s}
+.life-card:nth-child(4){animation-delay:.2s}
+.life-card .date{font-size:12px;color:#ff69b4;margin-bottom:8px}
+.life-card .content{font-size:15px;color:#8b4513;line-height:1.8}
+.life-card .life-img{width:100%;border-radius:12px;margin-bottom:12px;object-fit:cover;max-height:200px}
+.add-life-btn{
+  display:block;width:100%;padding:16px;border:2px dashed #ffb6c1;
+  border-radius:16px;background:rgba(255,255,255,.6);color:#ff69b4;
+  font-size:15px;cursor:pointer;text-align:center;transition:all .3s ease;
+  margin-top:10px;
+}
+.add-life-btn:hover{background:rgba(255,182,193,.2);border-color:#ff69b4;color:#ff4081}
+
+/* 生活贴输入弹窗 */
+.life-modal-overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,.4);z-index:2000;display:flex;
+  align-items:center;justify-content:center;padding:20px;
+  opacity:0;visibility:hidden;transition:all .3s ease;
+}
+.life-modal-overlay.active{opacity:1;visibility:visible}
+.life-modal{
+  background:#fff;border-radius:20px;padding:28px;max-width:480px;width:100%;
+  box-shadow:0 20px 60px rgba(0,0,0,.2);
+}
+.life-modal h3{color:#ff4081;margin-bottom:16px;font-size:20px}
+.life-modal textarea{
+  width:100%;padding:12px;border:2px solid #ffc0cb;border-radius:12px;
+  resize:vertical;min-height:100px;font-size:15px;color:#8b4513;margin-bottom:12px;
+}
+.life-modal input[type="date"]{
+  width:100%;padding:10px;border:2px solid #ffc0cb;border-radius:12px;margin-bottom:12px;
+  font-size:15px;color:#8b4513;
+}
+.life-modal .modal-btns{display:flex;gap:10px;justify-content:flex-end}
+.life-modal button{padding:10px 24px;border-radius:12px;border:none;cursor:pointer;font-size:14px}
+.btn-save{background:#ff4081;color:#fff}
+.btn-save:hover{background:#e91e63}
+.btn-cancel{background:#ffe4e1;color:#d63384}
+
+/* ===== 音乐播放器（带音量控制） ===== */
+.music-bar{
+  position:fixed;bottom:20px;right:20px;z-index:1000;
+  display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,.95);padding:10px 14px;border-radius:30px;
+  box-shadow:0 4px 20px rgba(255,105,180,.2);backdrop-filter:blur(10px);
+  flex-wrap:wrap;max-width:280px;
+}
+.music-btn{
+  width:36px;height:36px;border-radius:50%;border:none;
+  background:linear-gradient(135deg,#ff4081,#ff6b9d);
+  color:#fff;font-size:16px;cursor:pointer;display:flex;
+  align-items:center;justify-content:center;transition:all .3s ease;flex-shrink:0;
+}
+.music-btn:hover{transform:scale(1.1)}
+.music-info{font-size:12px;color:#d63384;max-width:100px;overflow:hidden;white-space:nowrap;flex-shrink:0}
+.music-wave{display:flex;gap:2px;align-items:flex-end;height:16px}
+.music-wave span{width:3px;background:#ff69b4;border-radius:2px;animation:wave .8s ease-in-out infinite alternate}
+.music-wave span:nth-child(2){animation-delay:.1s;height:8px}
+.music-wave span:nth-child(3){animation-delay:.2s;height:12px}
+.music-wave span:nth-child(4){animation-delay:.3s;height:6px}
+.music-wave span:nth-child(5){animation-delay:.4s;height:10px}
+@keyframes wave{from{height:4px}to{height:16px}}
+.music-paused .music-wave span{animation:none;height:4px}
+
+/* 音量控制 */
+.volume-control{
+  display:flex;align-items:center;gap:6px;flex-shrink:0;
+}
+.volume-icon{font-size:14px;color:#ff69b4;cursor:pointer}
+.volume-slider{
+  -webkit-appearance:none;appearance:none;width:70px;height:4px;
+  background:#ffc0cb;border-radius:2px;outline:none;cursor:pointer;
+}
+.volume-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:14px;height:14px;
+  border-radius:50%;background:#ff4081;cursor:pointer;box-shadow:0 2px 6px rgba(255,64,129,.3);
+}
+.volume-slider::-moz-range-thumb{
+  width:14px;height:14px;border-radius:50%;background:#ff4081;
+  cursor:pointer;border:none;box-shadow:0 2px 6px rgba(255,64,129,.3);
+}
+.volume-slider::-webkit-slider-runnable-track{height:4px;border-radius:2px}
+
+/* ===== 底部 ===== */
+.footer{text-align:center;padding:30px 20px;color:#ff69b4;font-size:13px;opacity:.7}
+
+/* ===== 响应式 ===== */
+@media(max-width:1100px){
+  .gif-sidebar{width:140px}
+  .gif-sidebar img{border-radius:10px}
+}
+@media(max-width:900px){
+  .gif-sidebar{display:none}
+  .main-content{padding:16px}
+}
+@media(max-width:768px){
+  .showcase-row,.showcase-row.reverse{flex-direction:column!important}
+  .showcase-img,.showcase-text{padding:20px;min-height:auto}
+  .showcase-img img{max-height:200px}
+  .showcase-text p{font-size:18px}
+  .mood-avatars{gap:20px}
+  .mood-layout{flex-direction:column}
+  .mood-record{width:100%}
+  .mood-avatar .gif-wrap{width:100px;height:100px}
+  .mood-center{font-size:32px}
+  .battle-row{gap:20px}
+  .battle-char .char-gif-wrap{width:130px;height:130px}
+  .life-grid{grid-template-columns:1fr}
+  .entrance-title{font-size:24px}
+  .entrance-btn{padding:12px 36px;font-size:16px}
+  .nav-title{font-size:18px}
+  .hero-section{min-height:80vh}
+  .music-bar{bottom:10px;right:10px;padding:8px 12px;max-width:240px}
+  .volume-slider{width:50px}
+  .music-info{display:none}
+}
+@media(max-width:480px){
+  .hero-section{min-height:70vh}
+  .mood-avatar .gif-wrap{width:80px;height:80px}
+  .battle-char .char-gif-wrap{width:110px;height:110px}
+  .battle-char .char-name{font-size:16px}
+  .stat-box{padding:6px 12px}
+  .stat-box .num{font-size:18px}
+  .music-bar{gap:6px;padding:6px 10px}
+  .volume-slider{width:40px}
+}
+
+/* 自定义光标 */
+body.cursor-heart{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><text y="28" font-size="28">❤️</text></svg>') 16 16, auto}
+body.cursor-hammer{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><text y="28" font-size="28">🔨</text></svg>') 16 16, auto}
+
+/* ===== 滚动条 ===== */
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:#fff0f5}
+::-webkit-scrollbar-thumb{background:#ffc0cb;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#ff69b4}
+</style>
+</head>
+<body>
+
+<!-- 背景音乐 -->
+<audio id="bgMusic" loop></audio>
+
+<!-- 入场弹窗 -->
+<div class="entrance-overlay" id="entranceOverlay">
+  <div class="entrance-heart">💕</div>
+  <div class="entrance-title">今天有没有想我？</div>
+  <div class="entrance-sub">不许说谎哦 ~</div>
+  <div class="entrance-btns">
+    <button class="entrance-btn btn-yes" onclick="enterSite()">❤️ 有！超级想</button>
+    <button class="entrance-btn btn-no" id="rejectBtn" onclick="rejectEnter(this)">没有</button>
+  </div>
+</div>
+
+<!-- 飘落爱心 -->
+<div class="falling-hearts" id="fallingHearts"></div>
+
+<!-- 图1全屏展示区 -->
+<section class="hero-section" id="heroSection">
+  <div class="hero-hearts" id="heroHearts"></div>
+  <div class="love-text-wall" id="loveTextWall"></div>
+  <div class="hero-scroll-hint">
+    向下滑动查看更多<br><span>↓</span>
+      </div>
+    </section>
+
+<!-- 导航 -->
+<nav class="nav">
+  <div class="nav-title">恋爱日记 <span>我们的专属小天地</span></div>
+</nav>
+
+<!-- 三栏布局 -->
+<div class="page-layout">
+  <!-- 左侧动图栏 -->
+  <aside class="gif-sidebar left-gifs">
+    <img src="./9.gif" alt="一二骑布布" title="一二骑布布">
+    <img src="./11.gif" alt="一二抱布布" title="一二抱布布">
+    <img src="./13.gif" alt="一二被锤" title="一二被锤">
+    <img src="./15.gif" alt="布布趴一二" title="布布趴一二">
+    <img src="./9.gif" alt="一二骑布布" title="一二骑布布">
+    <img src="./11.gif" alt="一二抱布布" title="一二抱布布">
+    <img src="./13.gif" alt="一二被锤" title="一二被锤">
+    <img src="./15.gif" alt="布布趴一二" title="布布趴一二">
+  </aside>
+
+  <!-- 主内容区 -->
+  <main class="main-content">
+
+    <!-- 图文展示区 -->
+    <section class="showcase-section" id="showcase">
+      <div class="showcase-card" style="animation-delay:.1s">
+        <div class="showcase-row">
+          <div class="showcase-img">
+            <img src="./2.jpg" alt="甜蜜日常">
+          </div>
+          <div class="showcase-text">
+            <div>
+              <p>每一天都要快快乐乐<br>疯疯癫癫也可以</p>
+              <div class="small">❤ 又疯一天 ❤</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="showcase-card" style="animation-delay:.2s">
+        <div class="showcase-row reverse">
+          <div class="showcase-img">
+            <img src="./3.jpg" alt="拍立得回忆">
+          </div>
+          <div class="showcase-text">
+            <div>
+              <p>日子平平淡淡<br>你我疯疯癫癫</p>
+              <div class="small">🍁 nice day ♡</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="showcase-card" style="animation-delay:.3s">
+        <div class="showcase-row">
+          <div class="showcase-img">
+            <img src="./4.jpg" alt="专属小猫咪">
+          </div>
+          <div class="showcase-text">
+            <div>
+              <p>快看！<br>居然是我们的<br>专属小猫咪</p>
+              <div class="small">🐱 喵 ~</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 今日心情 -->
+    <section class="mood-section" id="mood">
+      <div class="mood-title">今日心情</div>
+      <div class="mood-sub">希望今天的你，也是开开心心的</div>
+      <div class="mood-layout">
+        <!-- 左侧：表情包+爱心 -->
+        <div class="mood-avatars">
+          <div class="mood-avatar" onclick="showMood('一二','开心')">
+            <div class="gif-wrap"><img src="./一二.gif" alt="一二"></div>
+            <div class="name">一二</div>
+            <div class="action">开心~</div>
+          </div>
+          <div class="mood-center" id="moodCenter">💖</div>
+          <div class="mood-avatar" onclick="showMood('布布','亲亲')">
+            <div class="gif-wrap"><img src="./布布.gif" alt="布布"></div>
+            <div class="name">布布</div>
+            <div class="action">亲亲~</div>
+          </div>
+        </div>
+        <!-- 右侧：心情记录 -->
+        <div class="mood-record">
+          <div class="mood-record-title">📝 心情小记</div>
+          <div class="mood-list" id="moodList"></div>
+          <div class="mood-input-wrap">
+            <input type="text" id="moodInput" class="mood-input" placeholder="写下今天的心情..." maxlength="50" onkeydown="if(event.key==='Enter')saveMood()">
+            <button class="mood-save-btn" onclick="saveMood()">💾</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 表情包互动 -->
+    <section class="battle-section" id="battle">
+      <div class="battle-title">💖 爱的互动 💖</div>
+      <div class="battle-sub">每天更新 · 选择武器 · 点击表情包互动吧</div>
+      <div class="battle-row">
+        <!-- 一二 -->
+        <div class="battle-char" id="char1">
+          <div class="char-name">一二 <span class="tag">臭狗屎</span></div>
+          <div class="battle-stats">
+            <div class="stat-box">
+              <div class="num" id="heart1">0</div>
+              <div class="label">爱心</div>
+            </div>
+            <div class="stat-box">
+              <div class="num" id="hammer1">0</div>
+              <div class="label">锤子</div>
+            </div>
+          </div>
+          <div class="char-gif-wrap" id="emoji1" onclick="interact('一二',event)">
+            <img src="./一二.gif" alt="一二">
+          </div>
+          <div class="tool-hint" id="hint1">点击选择武器后点我</div>
+        </div>
+
+        <!-- VS -->
+        <div style="display:flex;align-items:center;justify-content:center;min-width:60px">
+          <span style="font-size:30px;color:#ffb6c1;font-weight:700">VS</span>
+        </div>
+
+        <!-- 布布 -->
+        <div class="battle-char" id="char2">
+          <div class="char-name">布布 <span class="tag">臭包包</span></div>
+          <div class="battle-stats">
+            <div class="stat-box">
+              <div class="num" id="heart2">0</div>
+              <div class="label">爱心</div>
+            </div>
+            <div class="stat-box">
+              <div class="num" id="hammer2">0</div>
+              <div class="label">锤子</div>
+            </div>
+          </div>
+          <div class="char-gif-wrap" id="emoji2" onclick="interact('布布',event)">
+            <img src="./布布.gif" alt="布布">
+          </div>
+          <div class="tool-hint" id="hint2">点击选择武器后点我</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:20px">
+        <div style="font-size:13px;color:#ff69b4;margin-bottom:12px">👇 选择你的互动方式 👇</div>
+        <div class="battle-tools">
+          <button class="tool-btn heart-btn" id="btnHeart" onclick="selectTool('heart')">
+            ❤️ 爱心模式
+          </button>
+          <button class="tool-btn hammer-btn" id="btnHammer" onclick="selectTool('hammer')">
+            🔨 锤子模式
+          </button>
+          <button class="tool-btn" style="background:#ffe4e1;color:#ff4081;border-color:#ffc0cb" onclick="resetDaily()">
+            🔄 每日重置
+          </button>
+        </div>
+        <div class="tool-hint" id="toolHint" style="margin-top:10px;color:#ff69b4">当前未选择武器，请先点击上方按钮</div>
+      </div>
+    </section>
+
+    <!-- 生活贴 -->
+    <section class="life-section" id="life">
+      <div class="life-title">记录生活贴</div>
+      <div class="life-grid" id="lifeGrid"></div>
+      <button class="add-life-btn" onclick="openLifeModal()">✚ 添加新的生活贴</button>
+    </section>
+
+    <!-- 底部 -->
+    <footer class="footer">
+      <p>💕 恋爱日记 · 记录每一个心动瞬间 💕</p>
+      <p>背景音乐：田馥甄 - 小幸运</p>
+    </footer>
+
+  </main>
+
+  <!-- 右侧动图栏 -->
+  <aside class="gif-sidebar right-gifs">
+    <img src="./10.gif" alt="拥抱亲亲" title="拥抱亲亲">
+    <img src="./12.gif" alt="脸颊贴贴" title="脸颊贴贴">
+    <img src="./14.gif" alt="吃棒棒糖" title="吃棒棒糖">
+    <img src="./16.gif" alt="抱球" title="抱球">
+    <img src="./10.gif" alt="拥抱亲亲" title="拥抱亲亲">
+    <img src="./12.gif" alt="脸颊贴贴" title="脸颊贴贴">
+    <img src="./14.gif" alt="吃棒棒糖" title="吃棒棒糖">
+    <img src="./16.gif" alt="抱球" title="抱球">
+  </aside>
+</div>
+
+<!-- 音乐播放器 -->
+<div class="music-bar" id="musicBar">
+  <button class="music-btn" id="musicBtn" onclick="toggleMusic()">▶️</button>
+  <div class="music-info">小幸运</div>
+  <div class="music-wave" id="musicWave">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <div class="volume-control">
+    <span class="volume-icon" id="volumeIcon" onclick="toggleMute()">🔊</span>
+    <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50" oninput="setVolume(this.value)">
+  </div>
+</div>
+
+<!-- 生活贴输入弹窗 -->
+<div class="life-modal-overlay" id="lifeModal">
+  <div class="life-modal">
+    <h3>✏️ 添加新的生活贴</h3>
+    <input type="date" id="lifeDate" />
+    <textarea id="lifeContent" placeholder="写下今天的美好瞬间..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeLifeModal()">取消</button>
+      <button class="btn-save" onclick="saveLife()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========== 数据存储 ========== */
+const STORAGE_KEY = 'loveDiary_data';
+const LAST_DATE_KEY = 'loveDiary_lastDate';
+let currentTool = null;
+let data = { hearts1:0, hammers1:0, hearts2:0, hammers2:0, lifePosts:[] };
+
+const samplePosts = [
+  { date:'2025-07-03', content:'今天认识到臭包包，哎呦这么害羞搞笑 ~', hasImage:false },
+  { date:'2025-07-15', content:'臭包包开始发癫了，但是我喜欢哈哈，一起癫癫颠', hasImage:false },
+  { date:'2026-06-10', content:'天天吃大餐，我们一起胖胖胖，宝宝嘴上说着不要，身体老诚实了', hasImage:false },
+  { date:'2026-06-30', content:'快快乐乐吃小蛋糕，榴莲吃不到，只能吃吃小冰棍加榴莲小蛋糕，还有牛牛自助，爽！', hasImage:false }
+];
+
+/* ========== 初始化 ========== */
+function init(){
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if(saved){ try{ data = JSON.parse(saved); }catch(e){ resetData(); } }
+  else{ resetData(); }
+  checkDailyReset();
+  renderLifePosts();
+  updateBattleStats();
+  createFallingHearts();
+  createHeroHearts();
+  createLoveTextWall();
+  initMusic();
+  loadMoodList();
+  renderMoodList();
+  document.getElementById('lifeDate').value = new Date().toISOString().split('T')[0];
+}
+function resetData(){
+  data = { hearts1:0, hammers1:0, hearts2:0, hammers2:0, lifePosts:[...samplePosts] };
+  saveData();
+}
+function saveData(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+function checkDailyReset(){
+  const today = new Date().toISOString().split('T')[0];
+  const lastDate = localStorage.getItem(LAST_DATE_KEY);
+  if(lastDate !== today){
+    localStorage.setItem(LAST_DATE_KEY, today);
+    data.hearts1 = 0; data.hammers1 = 0;
+    data.hearts2 = 0; data.hammers2 = 0;
+    saveData();
+  }
+}
+function resetDaily(){
+  if(!confirm('确定要重置今天的互动计数吗？')) return;
+  data.hearts1 = 0; data.hammers1 = 0; data.hearts2 = 0; data.hammers2 = 0;
+  saveData(); updateBattleStats(); showToast('已重置今日计数');
+}
+
+/* ========== 入场弹窗 ========== */
+let rejectCount = 0;
+const rejectTexts = ['不行，必须想！','骗人！重选！','再说没有试试？','你确定？','最后一次机会！'];
+function enterSite(){
+  document.getElementById('entranceOverlay').classList.add('hidden');
+  const audio = document.getElementById('bgMusic');
+  if(audio.src){
+    audio.play().catch(()=>{});
+    document.getElementById('musicBtn').textContent = '⏸';
+    document.getElementById('musicWave').classList.remove('music-paused');
+  }
+}
+function rejectEnter(btn){
+  rejectCount++;
+  const text = rejectTexts[Math.min(rejectCount-1, rejectTexts.length-1)];
+  const pop = document.createElement('div');
+  pop.className = 'entrance-reject'; pop.textContent = text;
+  pop.style.left = (btn.getBoundingClientRect().left + Math.random()*80 - 40) + 'px';
+  pop.style.top = (btn.getBoundingClientRect().top - 60) + 'px';
+  document.body.appendChild(pop); setTimeout(()=>pop.remove(), 600);
+  btn.parentElement.style.transform = `translate(${(Math.random()-.5)*120}px, ${(Math.random()-.5)*80}px)`;
+  if(rejectCount >= 3){
+    btn.textContent = '...好吧，想了'; btn.onclick = enterSite;
+    btn.style.background = '#fff'; btn.style.color = '#ff4081';
+  }
+}
+
+/* ========== 飘落爱心 ========== */
+function createFallingHearts(){
+  const container = document.getElementById('fallingHearts');
+  const hearts = ['♥','❤','💕','💖','💗','💓','💝'];
+  for(let i=0;i<20;i++){
+    const h = document.createElement('div'); h.className = 'falling-heart';
+    h.textContent = hearts[Math.floor(Math.random()*hearts.length)];
+    h.style.left = Math.random()*100 + '%';
+    h.style.animationDuration = (8+Math.random()*12) + 's';
+    h.style.animationDelay = Math.random()*10 + 's';
+    h.style.fontSize = (14+Math.random()*16) + 'px';
+    container.appendChild(h);
+  }
+}
+
+function createHeroHearts(){
+  const container = document.getElementById('heroHearts');
+  if(!container) return;
+  const hearts = ['♥','❤','💕','💖','💗','💓','💝','💘','💟'];
+  for(let i=0;i<30;i++){
+    const h = document.createElement('div'); h.className = 'falling-heart';
+    h.textContent = hearts[Math.floor(Math.random()*hearts.length)];
+    h.style.left = Math.random()*100 + '%';
+    h.style.top = Math.random()*100 + '%';
+    h.style.animationDuration = (4+Math.random()*6) + 's';
+    h.style.animationDelay = Math.random()*5 + 's';
+    h.style.fontSize = (12+Math.random()*20) + 'px';
+    h.style.position = 'absolute';
+    container.appendChild(h);
+  }
+}
+
+function createLoveTextWall(){
+  const wall = document.getElementById('loveTextWall');
+  if(!wall) return;
+  const phrases = [
+    '山野万里，你是我藏在微风里的欢喜','落日沉溺于橘色的海',
+    '晚风沦陷于赤诚的爱','人间万般景色，都不及你眉眼温柔',
+    '星光洒落人间，而你落在我的心上','我攒了许久的温柔，只想尽数赠予你',
+    '风遇见云，花遇见树，我有幸遇见你','月亮慢慢变圆，事事慢慢如愿',
+    '往后朝朝暮暮，烟火与浪漫，皆与你共度','不必奔赴星河，因为你就是我的整片宇宙',
+    '晚风轻踩云朵，浪漫铺满日常','一屋烟火，两人相伴，便是最好的浪漫',
+    '把爱意藏进四季，岁岁年年不离不弃','心动始于初见，温柔止于终老',
+    '山河遥遥，长路漫漫，我只想和你并肩','有幸遇见你',
+    '爱你如初','余生请多指教','你是我唯一例外','人间值得',
+    '执子之手','岁月如歌','朝朝暮暮','眉眼如初','有你在身边真好',
+    '山河远阔人间烟火','始于初见止于终老','万物皆甜而你胜万物',
+    '近你者甜','我想牵着你的手','去见你的路上连风都是甜的',
+    '最好的风景在身边','靠近你的时候内心温柔','为你千千万万遍',
+    '南风知我意吹梦到西洲','既见君子云胡不喜','既许一人以偏爱',
+    '愿尽余生之慷慨','遇见你爱意汹涌','看世界万物浪漫心动',
+    '慢慢亦漫漫','你是春日限定','你是来日方长','一想到你我就嘴角上扬',
+    '你在心上','你是人间四月天','温柔只给意中人','喜欢你胜过所有道理',
+    '原则抵不过我乐意','初见乍欢久处仍怦然','星河滚烫你是人间理想',
+    '你是我跨越山海也想见的人','四季有你胜过人间无数','遇见你三生有幸',
+    '一生两人三餐四季','生活明朗万物可爱','山海有你不怕千里',
+    '只缘感君一回顾','自此思君朝与暮','此心安处是吾乡','有你足矣',
+    '我的温柔全部赠予你','你的出现让所有心动都有了定义','浪漫至死不渝',
+    '和你做的每件事都叫做浪漫','两颗心在记录','像心跳听到了合奏',
+    '身边一直都是同一个人超酷的','那就一直在一起吧','春夏秋冬都拉起你的手',
+    '借夏天的名义一起吹吹风','被在乎被保护被需要被肯定被爱着',
+    '耐心是爱的别称','我们今年明年年年','你出现时心动就有了定义',
+    '牵手成为终极浪漫','许的愿是我们永远','遇到对的人就越活越开心',
+    '你是万物的依据','事事有回应的靠谱小狗','这次的角色是被爱者',
+    '那就在一起黄昏与四季','爱是形容词形容我们','世上唯一契合灵魂',
+    '这一帧只属于我们','蓄谋已久久得偿所愿','我的碎碎念都有了归宿'
+  ];
+  const fonts = [14,16,18,20,22,24,26,28];
+  for(let i=0;i<55;i++){
+    const el = document.createElement('div'); el.className = 'wall-text';
+    el.textContent = phrases[Math.floor(Math.random()*phrases.length)];
+    el.style.left = Math.random()*90 + '%';
+    el.style.top = Math.random()*100 + '%';
+    el.style.fontSize = fonts[Math.floor(Math.random()*fonts.length)] + 'px';
+    el.style.animationDuration = (18+Math.random()*22) + 's';
+    el.style.animationDelay = (Math.random()*20-10) + 's';
+    el.style.opacity = .35+Math.random()*.25;
+    wall.appendChild(el);
+  }
+}
+
+/* ========== 今日心情 ========== */
+const MOOD_KEY = 'loveDiary_moods';
+let moodList = [];
+
+function loadMoodList(){
+  try{ const s = localStorage.getItem(MOOD_KEY); moodList = s ? JSON.parse(s) : []; }
+  catch(e){ moodList = []; }
+}
+function saveMoodList(){ localStorage.setItem(MOOD_KEY, JSON.stringify(moodList)); }
+
+function showMood(name, action){ showToast(name + ' 今天也要' + action + '哦~ 💕'); }
+
+function saveMood(){
+  const input = document.getElementById('moodInput');
+  const text = input.value.trim();
+  if(!text){ showToast('写点什么吧~'); return; }
+  moodList.unshift({ text, time: new Date().toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) });
+  saveMoodList();
+  renderMoodList();
+  input.value = '';
+  showToast('心情已记录 ~');
+}
+
+function deleteMood(idx){
+  moodList.splice(idx, 1);
+  saveMoodList();
+  renderMoodList();
+}
+
+function renderMoodList(){
+  const container = document.getElementById('moodList');
+  if(!container) return;
+  if(moodList.length === 0){
+    container.innerHTML = '<div class="mood-list-empty">还没有记录心情，快来写下第一条吧 ~</div>';
+    return;
+  }
+  container.innerHTML = moodList.map((m, idx) => `
+    <div class="mood-item">
+      <span>💕 ${escapeHtml(m.text)}</span>
+      <span style="font-size:11px;color:#ff69b4;opacity:.6">${m.time}</span>
+      <span class="del-btn" onclick="deleteMood(${idx})">✕</span>
+    </div>
+  `).join('');
+}
+
+/* ========== 互动区 ========== */
+function selectTool(tool){
+  currentTool = tool;
+  document.getElementById('btnHeart').classList.toggle('active', tool==='heart');
+  document.getElementById('btnHammer').classList.toggle('active', tool==='hammer');
+  document.body.className = tool==='heart' ? 'cursor-heart' : 'cursor-hammer';
+  const hint = tool==='heart' ? '爱心模式已开启！点击表情包送出爱心 ❤️' : '锤子模式已开启！点击表情包轻轻敲打 🔨';
+  document.getElementById('toolHint').textContent = hint;
+}
+function interact(charName, event){
+  if(!currentTool){ showToast('请先选择爱心或锤子模式哦~'); return; }
+  const isChar1 = charName === '一二';
+  const isHeart = currentTool === 'heart';
+  if(isChar1){ if(isHeart) data.hearts1++; else data.hammers1++; }
+  else{ if(isHeart) data.hearts2++; else data.hammers2++; }
+  saveData(); updateBattleStats();
+
+  const wrap = document.getElementById(isChar1 ? 'emoji1' : 'emoji2');
+  if(isHeart){
+    wrap.classList.add('gif-hop');
+    createClickEffect(event.clientX, event.clientY, '❤️');
+    showToast(charName + ' 收到了爱心！好甜 ~');
+  }else{
+    wrap.classList.add('gif-shake');
+    createClickEffect(event.clientX, event.clientY, '🔨');
+    showToast(charName + ' 被轻轻敲了一下 ~');
+  }
+  setTimeout(()=>{wrap.classList.remove('gif-hop','gif-shake');}, 500);
+}
+function updateBattleStats(){
+  document.getElementById('heart1').textContent = data.hearts1;
+  document.getElementById('hammer1').textContent = data.hammers1;
+  document.getElementById('heart2').textContent = data.hearts2;
+  document.getElementById('hammer2').textContent = data.hammers2;
+}
+function createClickEffect(x, y, emoji){
+  const el = document.createElement('div'); el.className = 'click-effect';
+  el.textContent = emoji; el.style.left = x + 'px'; el.style.top = y + 'px';
+  document.body.appendChild(el); setTimeout(()=>el.remove(), 800);
+}
+
+/* ========== 生活贴 ========== */
+function renderLifePosts(){
+  const grid = document.getElementById('lifeGrid');
+  const posts = data.lifePosts.slice().reverse();
+  if(posts.length === 0){
+    grid.innerHTML = '<div style="text-align:center;color:#ff69b4;padding:40px">还没有生活贴，快来添加第一条吧 ~</div>';
+    return;
+  }
+  grid.innerHTML = posts.map((post,i) => `
+    <div class="life-card" style="animation-delay:${i*.08}s">
+      <div class="date">📅 ${formatDate(post.date)}</div>
+      ${post.hasImage && post.image ? `<img class="life-img" src="${post.image}" alt="生活贴图片">` : ''}
+      <div class="content">${escapeHtml(post.content)}</div>
+    </div>
+  `).join('');
+}
+function openLifeModal(){ document.getElementById('lifeModal').classList.add('active'); }
+function closeLifeModal(){ document.getElementById('lifeModal').classList.remove('active'); document.getElementById('lifeContent').value = ''; }
+function saveLife(){
+  const date = document.getElementById('lifeDate').value;
+  const content = document.getElementById('lifeContent').value.trim();
+  if(!date){ showToast('请选择日期'); return; }
+  if(!content){ showToast('写点什么吧'); return; }
+  data.lifePosts.push({ date, content, hasImage:false, image:'' });
+  saveData(); renderLifePosts(); closeLifeModal(); showToast('生活贴已保存 ~');
+}
+
+/* ========== 音乐控制（含音量） ========== */
+let isPlaying = false;
+let lastVolume = 0.5;
+function initMusic(){
+  const audio = document.getElementById('bgMusic');
+  audio.src = './小幸运.mp3';
+  audio.volume = 0.5;
+  audio.onerror = function(){
+    audio.src = './曲婉婷 - 最好的安排.mp3';
+    document.querySelector('.music-info').textContent = '最好的安排';
+    document.querySelector('.footer p:last-child').textContent = '背景音乐：曲婉婷 - 最好的安排';
+  };
+}
+function toggleMusic(){
+  const audio = document.getElementById('bgMusic');
+  const btn = document.getElementById('musicBtn');
+  const wave = document.getElementById('musicWave');
+  if(isPlaying){ audio.pause(); btn.textContent = '▶️'; wave.classList.add('music-paused'); }
+  else{
+    audio.play().catch(()=>showToast('音乐文件未找到，请确保psts文件夹中有mp3文件'));
+    btn.textContent = '⏸'; wave.classList.remove('music-paused');
+  }
+  isPlaying = !isPlaying;
+}
+function setVolume(val){
+  const audio = document.getElementById('bgMusic');
+  const v = val / 100;
+  audio.volume = v;
+  lastVolume = v;
+  const icon = document.getElementById('volumeIcon');
+  icon.textContent = v === 0 ? '🔇' : v < 0.3 ? '🔈' : v < 0.7 ? '🔉' : '🔊';
+}
+function toggleMute(){
+  const audio = document.getElementById('bgMusic');
+  const slider = document.getElementById('volumeSlider');
+  if(audio.volume > 0){ lastVolume = audio.volume; audio.volume = 0; slider.value = 0; }
+  else{ audio.volume = lastVolume || 0.5; slider.value = Math.round((lastVolume || 0.5) * 100); }
+  setVolume(slider.value);
+}
+
+/* ========== 工具函数 ========== */
+function formatDate(dateStr){
+  const d = new Date(dateStr);
+  const months = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+  return `${d.getFullYear()}年${months[d.getMonth()]}${d.getDate()}日`;
+}
+function escapeHtml(str){ const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+function showToast(msg){
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#ff4081;color:#fff;padding:12px 28px;border-radius:24px;font-size:14px;z-index:9999;box-shadow:0 4px 20px rgba(255,64,129,.3);animation:fadeInUp .3s ease;';
+  toast.textContent = msg; document.body.appendChild(toast);
+  setTimeout(()=>{toast.style.opacity='0';toast.style.transition='opacity .3s';setTimeout(()=>toast.remove(),300)}, 2000);
+}
+
+// 弹窗点击遮罩关闭
+document.getElementById('lifeModal').addEventListener('click', function(e){ if(e.target === this) closeLifeModal(); });
+
+// 启动
+init();
+</script>
+</body>
+</html>
