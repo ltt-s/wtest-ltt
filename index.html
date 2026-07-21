@@ -708,7 +708,8 @@ body.cursor-hammer{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3
         <div style="font-size:12px;color:#999;margin-bottom:10px">
           <a href="https://github.com/settings/tokens/new?scopes=repo&description=loveDiary" target="_blank" style="color:#ff4081">👉 点此创建 Token (勾选 repo 权限)</a>
         </div>
-        <button class="btn-save" style="width:100%;padding:10px;border:none;border-radius:10px;background:#ff4081;color:#fff;font-size:14px;font-weight:600;cursor:pointer" onclick="checkToken2()">保存并开启同步</button>
+        <button class="btn-save" style="width:100%;padding:10px;border:none;border-radius:10px;background:#ff4081;color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px" onclick="checkToken2()">保存并开启同步</button>
+        <button id="manualSyncBtn" style="width:100%;padding:8px;border:1px solid #ffc0cb;border-radius:10px;background:#fff0f5;color:#ff4081;font-size:13px;cursor:pointer;display:none" onclick="manualSync()">🔄 手动同步</button>
       </div>
       <p>💕 恋爱小记 · 记录每一个心动瞬间 💕</p>
       <p>背景音乐：田馥甄 - 小幸运</p>
@@ -837,19 +838,21 @@ async function cloudPull(){
   try{
     const res = await ghApi(`contents/${GH_DATA_FILE}`, 'GET');
     if(!res.ok){
-      if(res.status === 404) return null; // 文件不存在，首次使用
+      if(res.status === 404) return null;
+      if(res.status === 401){ showToast('Token 无效，请检查权限~'); return null; }
+      if(res.status === 403){ showToast('GitHub API 限制，请稍后再试~'); return null; }
       throw new Error('pull failed: ' + res.status);
     }
     const json = await res.json();
     dataSha = json.sha;
-    const decoded = JSON.parse(decodeURIComponent(escape(atob(json.content))));
+    const decoded = JSON.parse(decodeURIComponent(escape(atob(json.content.replace(/\n/g,'')))));
     return decoded;
-  }catch(e){ console.warn('cloudPull error:', e); return null; }
+  }catch(e){ console.warn('cloudPull error:', e); showToast('拉取数据失败: ' + e.message); return null; }
 }
 
 let cloudSyncTimer = null;
 async function cloudSync(){
-  if(!githubToken) return; // 未配置Token时只存本地
+  if(!githubToken) return;
   if(isSyncing) return;
   clearTimeout(cloudSyncTimer);
   cloudSyncTimer = setTimeout(async () => {
@@ -860,13 +863,23 @@ async function cloudSync(){
       const body = { message: 'sync: ' + new Date().toLocaleString('zh-CN'), content: encoded };
       if(dataSha) body.sha = dataSha;
       const res = await ghApi(`contents/${GH_DATA_FILE}`, 'PUT', body);
-      if(res.ok){ const json = await res.json(); dataSha = json.content.sha; }
-      else if(res.status === 409){ // sha 过期，重新拉取后重试
+      if(res.ok){
+        const json = await res.json();
+        dataSha = json.content.sha;
+        showToast('数据已同步到云端 ✓');
+      }else if(res.status === 409){
         await cloudPull(); cloudSync();
+      }else if(res.status === 401){
+        showToast('Token 无效，请检查~');
+      }else if(res.status === 403){
+        showToast('GitHub API 限制，请稍后再试~');
+      }else{
+        const errJson = await res.json().catch(()=>({}));
+        showToast('同步失败: ' + res.status + ' ' + (errJson.message||''));
       }
-    }catch(e){ console.warn('cloudSync error:', e); }
+    }catch(e){ console.warn('cloudSync error:', e); showToast('同步出错: ' + e.message); }
     isSyncing = false;
-  }, 2000); // 2秒防抖，避免频繁写入
+  }, 2000);
 }
 
 function checkToken(){
@@ -891,12 +904,31 @@ function checkToken2(){
 function updateSyncStatus(){
   const el = document.getElementById('syncStatusText');
   if(!el) return;
+  const btn = document.getElementById('manualSyncBtn');
   if(githubToken){
     el.textContent = '✅ 云同步已开启，数据将自动同步到 GitHub';
     el.style.color = '#4caf50';
     const input = document.getElementById('tokenInput2');
     if(input){ input.value = githubToken; input.disabled = true; }
+    if(btn) btn.style.display = 'block';
   }
+}
+
+async function manualSync(){
+  if(!githubToken){ showToast('请先配置 Token~'); return; }
+  showToast('正在同步...');
+  const cloudData = await cloudPull();
+  if(cloudData){
+    if(cloudData.moodList) moodList = cloudData.moodList;
+    if(cloudData.hearts1 !== undefined) data = { ...data, ...cloudData };
+    delete data.moodList;
+    saveMoodList();
+    renderMoodList();
+    updateBattleStats();
+    renderLifePosts();
+    showToast('已从云端拉取最新数据 ✓');
+  }
+  cloudSync();
 }
 
 async function initCloud(){
@@ -906,11 +938,16 @@ async function initCloud(){
   if(cloudData){
     if(cloudData.moodList) moodList = cloudData.moodList;
     if(cloudData.hearts1 !== undefined) data = { ...data, ...cloudData };
-    delete data.moodList; // 不在 data 里存 moodList
+    delete data.moodList;
     saveMoodList();
     renderMoodList();
     updateBattleStats();
     renderLifePosts();
+    showToast('已从云端同步数据 ✓');
+  }else{
+    // 首次使用，主动上传本地数据
+    showToast('首次同步，正在上传本地数据~');
+    cloudSync();
   }
 }
 
