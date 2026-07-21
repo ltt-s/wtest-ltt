@@ -117,12 +117,12 @@ body{
 .nav{
   position:sticky;top:0;z-index:100;background:rgba(255,240,245,.95);
   backdrop-filter:blur(10px);border-bottom:1px solid #ffc0cb;
-  padding:12px 20px;text-align:center;
+  padding:12px 20px;text-align:center;position:relative;
 }
 .nav-title{font-size:22px;font-weight:700;color:#ff4081;letter-spacing:2px}
 .nav-title span{font-size:16px;color:#ff6b9d;margin-left:8px}
-.sync-btn{position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:22px;cursor:pointer;opacity:.6;transition:all .3s}
-.sync-btn:hover{opacity:1;transform:translateY(-50%) scale(1.2)}
+.sync-btn{position:absolute;right:16px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.8);border:1px solid #ffc0cb;font-size:22px;cursor:pointer;opacity:.7;transition:all .3s;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;line-height:1;z-index:101}
+.sync-btn:hover{opacity:1;transform:translateY(-50%) scale(1.15);background:#ff4081;color:#fff}
 
 /* ===== 三栏布局 ===== */
 .page-layout{
